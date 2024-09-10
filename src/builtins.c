@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <errno.h>
+#include <time.h>
 
 #define PATH_MAX 4096
 
@@ -52,5 +53,34 @@ int builtin_exit(char **argv) {
 int builtin_favs(char **argv) {
     return -1;
 }
+
+static int recordatiorio_usage() {
+    fprintf(stderr, "usage: set recordatorio <seconds> <message>\n");
+    return 0;
+}
+int builtin_recordatorio(char **argv) {
+    if(argv[1] == NULL || argv[2] == NULL || argv[3] == NULL || strcmp(argv[1], "recordatorio")) {
+        recordatiorio_usage();
+        return -1;
+    }
+    int after = atoi(argv[2]);
+    if(after == 0) {
+        recordatiorio_usage();
+        return -1;
+    }
+    time_t t = time(NULL);
+    long int t1 = (long int) t;
+    DEBUG_OUT("Setting reminder at %ld\n", t1 + after);
+    
+    if(fork() == 0) {
+        DEBUG_OUT("CHILD: Spawned, waiting...\n");
+        int at = t1 + after;
+        while((int) time(NULL) <= at) sleep(1);
+        fprintf(stderr, "Reminder: %s\n", argv[3]);
+    }
+    return 0;
+}
+
+
 #endif
 

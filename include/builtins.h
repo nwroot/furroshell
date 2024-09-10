@@ -8,4 +8,5 @@ int builtin_exit(char **argv);
 
 #ifdef HOMEWORK
 int builtin_favs(char **argv);
+int builtin_recordatorio(char **argv);
 #endif

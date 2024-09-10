@@ -15,6 +15,7 @@ struct builtin builtins[] = {
     { .name = "exit", .exec = &builtin_exit },
 #ifdef HOMEWORK
     { .name = "favs", .exec = &builtin_favs },
+    { .name = "set", .exec = &builtin_recordatorio},
 #endif
 };
 
