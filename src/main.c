@@ -49,7 +49,7 @@ int main(int argc, char **argv) {
             
             for(int i = 0; i < how_many - 1 && pipe_chain[i]; i++) {
                 int pipes[2];
-                pipe(pipes);          
+                if(pipe(pipes)) abort();          
                 
                 DEBUG_OUT("Made pipes r:%d w:%d for i = %d\n", pipes[0], pipes[1], i);
                 
