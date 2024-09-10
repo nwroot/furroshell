@@ -38,11 +38,32 @@ int main(int argc, char **argv) {
         }
         
         if(strchr(lineptr, '|')) {
+            DEBUG_OUT("Not a builtin, pipes\n");
             char *pipe_chain[16] = { NULL };
-            char *str = malloc(strlen(lineptr));
+            char *str = malloc(arg_max);
             strcpy(str, lineptr);
             
-            separate_pipes(str, pipe_chain, 16);
+            int how_many = separate_pipes(str, pipe_chain, 16);
+            
+            int in = 0;
+            
+            for(int i = 0; i < how_many - 1 && pipe_chain[i]; i++) {
+                int pipes[2];
+                pipe(pipes);          
+                
+                DEBUG_OUT("Made pipes r:%d w:%d for i = %d\n", pipes[0], pipes[1], i);
+                
+                str_to_argv(pipe_chain[i], " ", &argv_s);
+                char **argv = argv_from_struct(&argv_s);
+                spawn_child(argv, in, pipes[1]);
+
+                close(pipes[1]);
+                in = pipes[0];
+            }
+            DEBUG_OUT("On last of chain %s\n", pipe_chain[how_many - 1]);
+            str_to_argv(pipe_chain[how_many - 1], " ", &argv_s);
+            char **argv = argv_from_struct(&argv_s);
+            spawn_child(argv, in, 1);
             
         } else {
             str_to_argv(lineptr, " ", &argv_s);
@@ -50,24 +71,8 @@ int main(int argc, char **argv) {
             if(execute_builtin(argv)) {
                 DEBUG_OUT("Finished builtin\n");
             } else {
-                DEBUG_OUT("Not a builtin, no pipes case. fork()...\n");
-                int f = fork();
-                if(f == 0) {
-                    DEBUG_OUT("CHILD: execvp(\"%s\", %p)\n", argv[0], &argv);
-                    // Child process starts here
-                    execvp(argv[0], argv);
-                    DEBUG_OUT("CHILD: Execution on child! execlp(): %s\n", strerror(errno));
-                    fprintf(stderr, "%s: command not found\n", argv[0]);
-                    abort();
-                } else {
-                    if(f == -1) {
-                        DEBUG_OUT("PARENT: Failed to fork(): %s\n", strerror(errno));
-                        abort();
-                    }
-                    DEBUG_OUT("PARENT: Waiting for %d to exit...\n", f);
-                    waitpid(f, NULL, 0);
-                    DEBUG_OUT("PARENT: %d exited.\n", f);
-                }
+                DEBUG_OUT("Not a builtin, no pipes\n");
+                spawn_child(argv, 0, 1);
             }
             free_str_to_argv(&argv_s);
         }
